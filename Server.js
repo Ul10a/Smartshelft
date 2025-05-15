@@ -27,7 +27,7 @@ mongoose.connect(process.env.MONGODB_URI , {
 // CONFIGURACIÓN DE MIDDLEWARES (ACTUALIZADA)
 // =============================================
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', path.join(__dirname, 'dist', 'views'));
 
 // Configuración mejorada de body-parser (CRUCIAL PARA FORMULARIOS/API)
 app.use(express.json({
