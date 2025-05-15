@@ -1,30 +1,53 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -eo pipefail
 
 echo "=== INICIANDO BUILD PARA RENDER ==="
+echo "Directorio actual: $(pwd)"
+echo "Contenido actual:"
+ls -la
 
-# 1. Crear estructura de directorios
+# 1. Crear estructura de directorios necesaria
+echo "📂 Creando estructura de directorios..."
 mkdir -p dist/views dist/public dist/routes dist/controllers dist/models dist/utils
 
-# 2. Copiar archivos esenciales
+# 2. Copiar VISTAS con verificación
 echo "📂 Copiando vistas..."
-cp -R views/* dist/views/
+if [ ! -d "views" ]; then
+  echo "❌ Error: No existe el directorio views/"
+  exit 1
+fi
+cp -Rv views/* dist/views/
 
+# 3. Copiar archivos públicos
 echo "📦 Copiando archivos públicos..."
-[ -d "public" ] && cp -R public/* dist/public/
+if [ -d "public" ]; then
+  cp -Rv public/* dist/public/
+else
+  echo "⚠️ No se encontró directorio public/"
+fi
 
-echo "📄 Copiando archivos del servidor..."
-cp server.js dist/
-cp package.json dist/
-cp package-lock.json dist/
-cp mongo.env dist/
+# 4. Copiar archivos del servidor
+echo "📄 Copiando archivos principales..."
+cp -v server.js dist/
+cp -v package.json dist/
+cp -v package-lock.json dist/
+cp -v mongo.env dist/
 
-echo "🔌 Copiando rutas y controladores..."
-cp -R routes/* dist/routes/
-cp -R controllers/* dist/controllers/
-cp -R models/* dist/models/
-[ -d "utils" ] && cp -R utils/* dist/utils/
+# 5. Copiar código fuente
+echo "🔌 Copiando código fuente..."
+cp -Rv routes/* dist/routes/
+cp -Rv controllers/* dist/controllers/
+cp -Rv models/* dist/models/
 
-echo "✅ Build completado exitosamente"
-echo "=== ESTRUCTURA FINAL ==="
-ls -R dist/
+if [ -d "utils" ]; then
+  cp -Rv utils/* dist/utils/
+else
+  echo "⚠️ No se encontró directorio utils/"
+fi
+
+# 6. Verificación final
+echo "=== VERIFICACIÓN FINAL ==="
+echo "Estructura en dist/:"
+find dist/ -type d -exec ls -la {} \;
+
+echo "✅ BUILD COMPLETADO CON ÉXITO"
