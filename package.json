@@ -2,9 +2,10 @@
   "name": "lcdprograma",
   "version": "1.0.0",
   "scripts": {
-     "start": "node server.js",
-    "build": "chmod +x render-build.sh && ./render-build.sh",
-    "dev": "nodemon server.js"
+    "start": "node dist/server.js",
+    "build": "./render-build.sh",
+    "dev": "nodemon server.js",
+    "postinstall": "echo 'Instalación completada'"
   },
   "dependencies": {
     "bcrypt": "6.0.0",
@@ -18,6 +19,7 @@
     "serialport": "13.0.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }
