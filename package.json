@@ -4,7 +4,7 @@
   "scripts": {
     "start": "node dist/server.js",
     "build": "./render-build.sh",
-    "dev": "nodemon server.js",
+    "dev": "nodemon Server.js",
     "postinstall": "echo 'Instalación completada'"
   },
   "dependencies": {
