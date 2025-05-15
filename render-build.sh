@@ -6,32 +6,43 @@ echo "Directorio actual: $(pwd)"
 echo "Contenido:"
 ls -la
 
-# 1. Verificar archivos esenciales
-ESSENTIAL_FILES=("server.js" "package.json" "package-lock.json" "mongo.env")
-for file in "${ESSENTIAL_FILES[@]}"; do
-  if [ ! -f "$file" ]; then
-    echo "❌ Error: Archivo esencial $file no encontrado en $(pwd)"
-    echo "Buscando en otras ubicaciones..."
-    
-    # Buscar en directorio padre
-    if [ -f "../$file" ]; then
-      echo "✅ Encontrado en directorio padre, copiando..."
-      cp -v "../$file" .
-    else
-      echo "❌ Error Crítico: $file no existe en ninguna ubicación conocida"
-      exit 1
-    fi
+# 1. Verificación ABSOLUTA de server.js
+SERVER_JS_PATH=""
+possible_paths=(
+  "./server.js"
+  "/opt/render/project/src/server.js"
+  "${HOME}/server.js"
+  "/tmp/server.js"
+)
+
+for path in "${possible_paths[@]}"; do
+  if [ -f "$path" ]; then
+    SERVER_JS_PATH="$path"
+    echo "✅ ENCONTRADO server.js en: $path"
+    break
+  else
+    echo "🔍 No encontrado en: $path"
   fi
 done
 
-# 2. Continuar con el build normal
-echo "📦 Continuando con el build..."
+if [ -z "$SERVER_JS_PATH" ]; then
+  echo "❌ ERROR CRÍTICO: server.js no existe en ninguna ubicación conocida"
+  echo "Contenido actual del directorio:"
+  ls -la
+  echo "Buscando en todo el sistema..."
+  find / -name "server.js" 2>/dev/null || true
+  exit 1
+fi
+
+# 2. Crear estructura de directorios
 mkdir -p dist/{views,public,routes,controllers,models,utils}
 
-# Copiar archivos principales
-cp -v server.js package.json package-lock.json mongo.env dist/
+# 3. Copiar server.js y otros esenciales
+echo "📦 Copiando archivos principales..."
+cp -v "$SERVER_JS_PATH" dist/
+cp -v package.json package-lock.json mongo.env dist/
 
-# Copiar vistas y código fuente
+# 4. Copiar vistas y código fuente
 [ -d "views" ] && cp -Rv views/* dist/views/
 [ -d "public" ] && cp -Rv public/* dist/public/
 [ -d "routes" ] && cp -Rv routes/* dist/routes/
@@ -39,6 +50,6 @@ cp -v server.js package.json package-lock.json mongo.env dist/
 [ -d "models" ] && cp -Rv models/* dist/models/
 [ -d "utils" ] && cp -Rv utils/* dist/utils/
 
-echo "✅ Build completado con éxito"
+echo "✅ BUILD COMPLETADO CON ÉXITO"
 echo "Estructura final en dist/:"
 ls -R dist/
