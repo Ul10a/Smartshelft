@@ -2,55 +2,43 @@
 set -eo pipefail
 
 echo "===== INICIANDO BUILD EN RENDER ====="
-echo "Node.js: $(node -v)"
-echo "NPM: $(npm -v)"
 echo "Directorio actual: $(pwd)"
-echo "Contenido inicial:"
+echo "Contenido:"
 ls -la
 
-# 1. Crear estructura de directorios en dist/
-mkdir -p dist/{views,public,routes,controllers,models,utils}
-
-# 2. Copiar archivos esenciales con verificación
-echo "📦 Copiando archivos principales..."
+# 1. Verificar archivos esenciales
 ESSENTIAL_FILES=("server.js" "package.json" "package-lock.json" "mongo.env")
 for file in "${ESSENTIAL_FILES[@]}"; do
   if [ ! -f "$file" ]; then
-    echo "❌ Error: Archivo esencial $file no encontrado"
-    exit 1
-  fi
-  cp -v "$file" dist/
-done
-
-# 3. Copiar vistas (verificación crítica)
-echo "📂 Copiando vistas..."
-if [ ! -d "views" ]; then
-  echo "❌ Error Crítico: Directorio 'views' no encontrado"
-  exit 1
-fi
-cp -Rv views/* dist/views/
-echo "✅ Vistas copiadas. Contenido:"
-ls -la dist/views/
-
-# 4. Copiar código fuente
-echo "🔌 Copiando código fuente..."
-SOURCE_DIRS=("routes" "controllers" "models" "utils" "public")
-for dir in "${SOURCE_DIRS[@]}"; do
-  if [ -d "$dir" ]; then
-    cp -Rv "$dir"/* "dist/$dir/"
-  else
-    echo "⚠️ Advertencia: $dir no encontrado"
+    echo "❌ Error: Archivo esencial $file no encontrado en $(pwd)"
+    echo "Buscando en otras ubicaciones..."
+    
+    # Buscar en directorio padre
+    if [ -f "../$file" ]; then
+      echo "✅ Encontrado en directorio padre, copiando..."
+      cp -v "../$file" .
+    else
+      echo "❌ Error Crítico: $file no existe en ninguna ubicación conocida"
+      exit 1
+    fi
   fi
 done
 
-# 5. Instalar dependencias en dist/
-echo "📦 Instalando dependencias en dist/..."
-cd dist && npm install --production && cd ..
+# 2. Continuar con el build normal
+echo "📦 Continuando con el build..."
+mkdir -p dist/{views,public,routes,controllers,models,utils}
 
-# 6. Verificación final
-echo "=== ESTRUCTURA FINAL EN dist/ ==="
-echo "Tamaño de dist/: $(du -sh dist/)"
-echo "Contenido:"
-tree -L 3 dist/ || ls -R dist/
+# Copiar archivos principales
+cp -v server.js package.json package-lock.json mongo.env dist/
 
-echo "🟢 BUILD COMPLETADO CON ÉXITO 🟢"
+# Copiar vistas y código fuente
+[ -d "views" ] && cp -Rv views/* dist/views/
+[ -d "public" ] && cp -Rv public/* dist/public/
+[ -d "routes" ] && cp -Rv routes/* dist/routes/
+[ -d "controllers" ] && cp -Rv controllers/* dist/controllers/
+[ -d "models" ] && cp -Rv models/* dist/models/
+[ -d "utils" ] && cp -Rv utils/* dist/utils/
+
+echo "✅ Build completado con éxito"
+echo "Estructura final en dist/:"
+ls -R dist/
