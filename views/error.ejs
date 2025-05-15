@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Error <%= status %></title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .error-details { margin-top: 20px; padding: 15px; background: #f8d7da; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Error <%= status %></h1>
+        <p><strong><%= message %></strong></p>
+        
+        <% if (error && Object.keys(error).length > 0) { %>
+            <div class="error-details">
+                <h3>Detalles del error:</h3>
+                <% if (error.stack) { %>
+                    <pre><%= error.stack %></pre>
+                <% } else { %>
+                    <p><%= JSON.stringify(error, null, 2) %></p>
+                <% } %>
+            </div>
+        <% } %>
+    </div>
+</body>
+</html>
