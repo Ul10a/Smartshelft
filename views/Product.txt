@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <!-- ... (código anterior se mantiene igual) ... -->
+  <style>
+    /* Estilos para el modal de envío a Arduino - Mejorados */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(3px);
+    }
+
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+      animation: fadeInModal 0.4s ease-out;
+      border: 1px solid #3f51b5;
+    }
+
+    @keyframes fadeInModal {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal h2 {
+      margin-top: 0;
+      color: #3f51b5;
+      text-align: center;
+      border-bottom: 2px solid #f5f5f5;
+      padding-bottom: 10px;
+    }
+
+    .modal-data {
+      background: #f9f9f9;
+      padding: 1.2rem;
+      border-radius: 10px;
+      margin: 1.2rem 0;
+      border-left: 4px solid #3f51b5;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 1.8rem;
+    }
+
+    .modal-actions button {
+      padding: 0.8rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .modal-actions .cancel {
+      background: #f44336;
+      color: white;
+    }
+
+    .modal-actions .cancel:hover {
+      background: #d32f2f;
+      transform: translateY(-2px);
+    }
+
+    .modal-actions .send {
+      background: #4caf50;
+      color: white;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .modal-actions .send.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-actions .send.active:hover {
+      background: #388e3c;
+      transform: translateY(-2px);
+    }
+
+    /* Nuevos estilos para feedback */
+    #statusMessage {
+      margin-top: 1rem;
+      padding: 0.8rem;
+      border-radius: 8px;
+      display: none;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .success {
+      background-color: #dff0d8;
+      color: #3c763d;
+      border: 1px solid #d6e9c6;
+    }
+
+    .error {
+      background-color: #f2dede;
+      color: #a94442;
+      border: 1px solid #ebccd1;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- ... (código anterior se mantiene igual hasta el botón de enviar) ... -->
+
+  <!-- Modal para enviar a Arduino - Versión Mejorada -->
+  <div class="modal" id="arduinoModal">
+    <div class="modal-content">
+      <h2>Enviar a Arduino</h2>
+      <div class="modal-data" id="modalData"></div>
+      
+      <label>Selecciona un puerto serial:</label>
+      <select id="puertoSelect" class="form-select">
+        <option value="">-- Selecciona --</option>
+        <% if (puertos && puertos.length > 0) { %>
+          <% puertos.forEach(puerto => { %>
+            <option value="<%= puerto.path %>">
+              <%= puerto.path %> - <%= puerto.manufacturer || 'Desconocido' %>
+              <% if (puerto.serialNumber) { %> (SN: <%= puerto.serialNumber %>) <% } %>
+            </option>
+          <% }); %>
+        <% } else { %>
+          <option value="" disabled>No se encontraron puertos</option>
+        <% } %>
+      </select>
+
+      <div id="statusMessage"></div>
+
+      <div class="modal-actions">
+        <button class="cancel" onclick="closeModal()">Cancelar</button>
+        <button class="send" id="sendButton" onclick="confirmSend()">
+          <span id="sendText">Enviar</span>
+          <span id="sendSpinner" class="loading" style="display:none;"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ... (código anterior se mantiene igual) ...
+
+    function showStatus(message, isSuccess) {
+      const statusElement = document.getElementById('statusMessage');
+      statusElement.textContent = message;
+      statusElement.className = isSuccess ? 'success' : 'error';
+      statusElement.style.display = 'block';
+      
+      setTimeout(() => {
+        statusElement.style.display = 'none';
+      }, 5000);
+    }
+
+    function openModal(producto) {
+      const modal = document.getElementById('arduinoModal');
+      const modalData = document.getElementById('modalData');
+      
+      let html = `
+        <p><strong>Nombre:</strong> ${producto.name}</p>
+        <p><strong>Precio:</strong> $${parseFloat(producto.price).toFixed(2)}</p>
+        <p><strong>Estado:</strong> ${producto.available === "true" ? 'Disponible' : 'No disponible'}</p>
+      `;
+      
+      if (producto.promotion_enabled === "true" && producto.promotion) {
+        html += `<p><strong>Promoción:</strong> ${producto.promotion}</p>`;
+      }
+
+      modalData.innerHTML = html;
+      modal.style.display = 'flex';
+      document.getElementById('puertoSelect').value = '';
+      document.getElementById('sendButton').classList.remove('active');
+      document.getElementById('statusMessage').style.display = 'none';
+    }
+
+    function closeModal() {
+      document.getElementById('arduinoModal').style.display = 'none';
+    }
+
+    document.getElementById('puertoSelect').addEventListener('change', function() {
+      const sendBtn = document.getElementById('sendButton');
+      if (this.value) {
+        sendBtn.classList.add('active');
+      } else {
+        sendBtn.classList.remove('active');
+      }
+    });
+
+    function confirmSend() {
+      const puerto = document.getElementById('puertoSelect').value;
+      if (!puerto) return;
+
+      const productId = selectedCard.dataset.id;
+      const sendBtn = document.getElementById('sendButton');
+      const sendText = document.getElementById('sendText');
+      const spinner = document.getElementById('sendSpinner');
+      
+      // Mostrar estado de carga
+      sendText.textContent = 'Enviando...';
+      spinner.style.display = 'inline-block';
+      sendBtn.disabled = true;
+      
+      fetch(`/products/${productId}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ puerto })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Error en la red');
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.success) {
+          showStatus(data.message, true);
+          setTimeout(() => closeModal(), 1500);
+        } else {
+          showStatus(`Error: ${data.message}`, false);
+        }
+      })
+      .catch(error => {
+        showStatus('Error de conexión con el servidor', false);
+        console.error('Error:', error);
+      })
+      .finally(() => {
+        sendText.textContent = 'Enviar';
+        spinner.style.display = 'none';
+        sendBtn.disabled = false;
+      });
+    }
+
+    function sendToArduino() {
+      if (!selectedCard) {
+        showStatus('Selecciona un producto primero', false);
+        return;
+      }
+      
+      if (selectedCard.dataset.available !== "true") {
+        showStatus('El producto no está disponible', false);
+        return;
+      }
+      
+      openModal(selectedCard.dataset);
+    }
+  </script>
+</body>
+</html>
