@@ -1,31 +1,18 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-echo "=== INICIANDO BUILD PARA RENDER ==="
+echo "===== INICIANDO BUILD EN RENDER ====="
+echo "Node.js: $(node -v)"
+echo "NPM: $(npm -v)"
 echo "Directorio actual: $(pwd)"
-echo "Node.js version: $(node -v)"
-echo "NPM version: $(npm -v)"
+echo "Contenido inicial:"
+ls -la
 
-# 1. Instalar dependencias (esto ya lo hace npm install del Build Command)
-echo "📦 Dependencias ya se instalarán con 'npm install'"
+# 1. Crear estructura de directorios en dist/
+mkdir -p dist/{views,public,routes,controllers,models,utils}
 
-# 2. Crear estructura de directorios necesaria
-echo "📂 Creando estructura de directorios..."
-mkdir -p dist/views dist/public dist/routes dist/controllers dist/models dist/utils
-
-# 3. Copiar VISTAS con verificación exhaustiva
-echo "📂 Copiando vistas..."
-if [ ! -d "views" ]; then
-  echo "❌ Error Crítico: No existe el directorio views/"
-  ls -la
-  exit 1
-fi
-
-cp -Rv views/* dist/views/
-echo "✅ Vistas copiadas. Contenido:"
-ls -la dist/views/
-
-# 4. Copiar archivos esenciales con verificación
+# 2. Copiar archivos esenciales con verificación
+echo "📦 Copiando archivos principales..."
 ESSENTIAL_FILES=("server.js" "package.json" "package-lock.json" "mongo.env")
 for file in "${ESSENTIAL_FILES[@]}"; do
   if [ ! -f "$file" ]; then
@@ -35,20 +22,35 @@ for file in "${ESSENTIAL_FILES[@]}"; do
   cp -v "$file" dist/
 done
 
-# 5. Copiar código fuente
+# 3. Copiar vistas (verificación crítica)
+echo "📂 Copiando vistas..."
+if [ ! -d "views" ]; then
+  echo "❌ Error Crítico: Directorio 'views' no encontrado"
+  exit 1
+fi
+cp -Rv views/* dist/views/
+echo "✅ Vistas copiadas. Contenido:"
+ls -la dist/views/
+
+# 4. Copiar código fuente
 echo "🔌 Copiando código fuente..."
-DIRECTORIES=("routes" "controllers" "models" "utils")
-for dir in "${DIRECTORIES[@]}"; do
+SOURCE_DIRS=("routes" "controllers" "models" "utils" "public")
+for dir in "${SOURCE_DIRS[@]}"; do
   if [ -d "$dir" ]; then
     cp -Rv "$dir"/* "dist/$dir/"
   else
-    echo "⚠️ Advertencia: Directorio $dir no encontrado"
+    echo "⚠️ Advertencia: $dir no encontrado"
   fi
 done
 
+# 5. Instalar dependencias en dist/
+echo "📦 Instalando dependencias en dist/..."
+cd dist && npm install --production && cd ..
+
 # 6. Verificación final
-echo "=== VERIFICACIÓN FINAL ==="
-echo "Estructura en dist/:"
+echo "=== ESTRUCTURA FINAL EN dist/ ==="
+echo "Tamaño de dist/: $(du -sh dist/)"
+echo "Contenido:"
 tree -L 3 dist/ || ls -R dist/
 
-echo "=== BUILD COMPLETADO CON ÉXITO ==="
+echo "🟢 BUILD COMPLETADO CON ÉXITO 🟢"
