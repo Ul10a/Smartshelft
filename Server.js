@@ -3,21 +3,21 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const dotenv = require('dotenv');
 const path = require('path');
-const fs = require('fs'); // Añadido para verificación de vistas
+const fs = require('fs');
 const app = express();
 
-// Configuración de entorno (seguridad recomendada)
+// Configuración de entorno
 dotenv.config({ path: 'mongo.env' });
 
 // =============================================
-// VERIFICACIÓN DE VISTAS (NUEVO)
+// VERIFICACIÓN DE VISTAS
 // =============================================
 const viewsPath = path.join(__dirname, 'views');
 try {
   const viewFiles = fs.readdirSync(viewsPath);
   console.log('✅ Vistas encontradas:', viewFiles);
-  if (!viewFiles.includes('login.ejs')) {
-    console.error('❌ Falta vista esencial (login.ejs)');
+  if (!viewFiles.includes('login.ejs') || !viewFiles.includes('error.ejs')) {
+    console.error('❌ Faltan vistas esenciales (login.ejs o error.ejs)');
   }
 } catch (err) {
   console.error('❌ Error accediendo al directorio views:', err);
@@ -25,11 +25,11 @@ try {
 }
 
 // =============================================
-// CONEXIÓN A MONGODB (MEJORADA)
+// CONEXIÓN A MONGODB
 // =============================================
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true, // Añadido para evitar warning
+  useUnifiedTopology: true,
   retryWrites: true,
   w: 'majority'
 })
@@ -40,12 +40,12 @@ mongoose.connect(process.env.MONGODB_URI, {
 });
 
 // =============================================
-// CONFIGURACIÓN DE VISTAS (MODIFICADO)
+// CONFIGURACIÓN DE VISTAS
 // =============================================
 app.set('view engine', 'ejs');
-app.set('views', viewsPath); // Usamos la variable ya definida
+app.set('views', viewsPath);
 
-// Configuración mejorada de body-parser
+// Configuración de body-parser
 app.use(express.json({
   limit: '10mb',
   strict: true
@@ -57,25 +57,22 @@ app.use(express.urlencoded({
   parameterLimit: 1000
 }));
 
-// Configuración de sesión (mejorada para seguridad)
+// =============================================
+// CONFIGURACIÓN DE SESIÓN (MODIFICADO)
+// =============================================
 app.use(session({
   secret: process.env.SESSION_SECRET || 'secreto-lcd',
-  resave: false,
+  resave: true, // Cambiado a true para mayor confiabilidad
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000
-  }
+  },
+  name: 'tuapp.sid' // Nombre específico para la cookie
 }));
 
-// Middleware para pasar datos de sesión a todas las vistas
-app.use((req, res, next) => {
-  res.locals.user = req.session.user || null;
-  next();
-});
-
-// Archivos estáticos con cache control (optimización)
+// Archivos estáticos con cache control
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '1d',
   etag: true,
@@ -93,34 +90,37 @@ app.get('/', (req, res) => {
   res.redirect('/login');
 });
 
-// Importar rutas
+// Importar rutas (AGREGADO DASHBOARD)
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
+const dashboardRoutes = require('./routes/dashboard'); // Nueva línea
 
 // Montar rutas con prefijos
 app.use('/', authRoutes);
+app.use('/', dashboardRoutes); // Nueva línea
 app.use('/products', productRoutes);
 
 // =============================================
-// MANEJO DE ERRORES (MEJORADO)
+// MANEJO DE ERRORES
 // =============================================
 app.use((req, res, next) => {
-  res.status(404).render('login', { 
-    error: 'Página no encontrada',
+  res.status(404).render('error', {
+    message: 'Página no encontrada',
     layout: false
   });
 });
 
 app.use((err, req, res, next) => {
   console.error('🔥 Error:', err.stack);
-  res.status(500).render('login', {
-    error: 'Error interno del servidor: ' + err.message,
+  res.status(500).render('error', {
+    message: 'Error interno del servidor',
+    error: process.env.NODE_ENV === 'development' ? err.message : null,
     layout: false
   });
 });
 
 // =============================================
-// INICIAR SERVIDOR (CON MÁS INFORMACIÓN)
+// INICIAR SERVIDOR
 // =============================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
