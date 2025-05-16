@@ -44,11 +44,15 @@ app.use(express.urlencoded({
 
 // Configuración de sesión (mejorada para seguridad)
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'secreto-lcd',
+  secret: process.env.SESSION_SECRET || 'secreto-temporal',
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({  // ← Usa MongoDB para almacenar sesiones
+    mongoUrl: process.env.MONGODB_URI,
+    ttl: 24 * 60 * 60 // 1 día
+  }),
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
+    secure: process.env.NODE_ENV === 'production', // HTTPS en producción
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000 // 1 día
   }
