@@ -54,6 +54,8 @@ app.use(session({
   }),
   cookie: {
     secure: process.env.NODE_ENV === 'production', // Requerido para HTTPS
+    secure: true,  // Solo HTTPS
+    sameSite: 'none',  // Necesario si el frontend/backend están en distintos dominios
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000 // 1 día en milisegundos
   }
