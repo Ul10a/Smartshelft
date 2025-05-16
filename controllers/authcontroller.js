@@ -37,24 +37,37 @@ exports.login = async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.render('login', { error: 'Usuario o contraseña incorrecta' });
+    return res.render('login', { error: 'Usuario o contraseña requeridos' });
   }
 
-  const user = await User.findOne({ username });
-  if (!user) {
-    return res.render('login', { error: 'Usuario o contraseña incorrecta' });
-  }
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.render('login', { error: 'Credenciales inválidas' });
+    }
 
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) {
-    return res.render('login', { error: 'Usuario o contraseña incorrecta' });
-  }
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      return res.render('login', { error: 'Credenciales inválidas' });
+    }
 
-  req.session.userId = user._id;
-  req.session.username = user.username;
-  res.redirect('/dashboard');
+    // Guarda la sesión explícitamente antes de redirigir
+    req.session.userId = user._id;
+    req.session.username = user.username;
+
+    req.session.save(err => {  // ← Esto asegura que la sesión se guarde
+      if (err) {
+        console.error('Error al guardar sesión:', err);
+        return res.render('login', { error: 'Error interno' });
+      }
+      return res.redirect('/dashboard');  // ← Redirige después de guardar
+    });
+
+  } catch (error) {
+    console.error('Error en login:', error);
+    return res.render('login', { error: 'Error del servidor' });
+  }
 };
-
 // Cerrar sesión
 exports.logout = (req, res) => {
   req.session.destroy(err => {
