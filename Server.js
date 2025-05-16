@@ -44,21 +44,14 @@ app.use(express.urlencoded({
 // Configuración de sesión (mejorada para seguridad)
 
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || 'secreto-lcd',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI,
-    collectionName: 'sessions',
-    ttl: 14 * 24 * 60 * 60 // 14 días
-  }),
   cookie: {
-    secure: true, // Solo HTTPS
+    secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
     httpOnly: true,
-    sameSite: 'none',
-    maxAge: 14 * 24 * 60 * 60 * 1000 // 14 días
-  },
-  proxy: true // Necesario para HTTPS en Render
+    maxAge: 24 * 60 * 60 * 1000 // 1 día
+  }
 }));
 // Archivos estáticos con cache control (optimización)
 app.use(express.static(path.join(__dirname, 'public'), {
