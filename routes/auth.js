@@ -17,6 +17,10 @@ router.get('/forgot-password', authController.getForgotPassword); // Se añadió
 router.post('/forgot-password', authController.postForgotPassword); // Se modificó el POST para usar la función correcta
 
 // Ruta protegida para el dashboard
-router.get('/dashboard', authController.dashboard); // Usamos la función dashboard del controlador
-
+router.get('/dashboard', (req, res, next) => {
+  if (!req.session.userId) {
+    return res.redirect('/login');  // ← Middleware de autenticación
+  }
+  next();
+}, authController.dashboard);
 module.exports = router;
