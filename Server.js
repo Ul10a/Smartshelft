@@ -61,15 +61,17 @@ app.use(express.urlencoded({
 // CONFIGURACIÓN DE SESIÓN (MODIFICADO)
 // =============================================
 app.use(session({
+ app.use(session({
   secret: process.env.SESSION_SECRET || 'secreto-lcd',
-  resave: true, // Cambiado a true para mayor confiabilidad
+  resave: false, // Mantenemos false como tenías originalmente
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'lax' // Añadimos esta línea
   },
-  name: 'tuapp.sid' // Nombre específico para la cookie
+  name: 'tuapp.sid'
 }));
 
 // Archivos estáticos con cache control
