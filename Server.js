@@ -3,42 +3,58 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const dotenv = require('dotenv');
 const path = require('path');
+const fs = require('fs'); // Añadido para verificación de vistas
 const app = express();
 
 // Configuración de entorno (seguridad recomendada)
 dotenv.config({ path: 'mongo.env' });
 
 // =============================================
+// VERIFICACIÓN DE VISTAS (NUEVO)
+// =============================================
+const viewsPath = path.join(__dirname, 'views');
+try {
+  const viewFiles = fs.readdirSync(viewsPath);
+  console.log('✅ Vistas encontradas:', viewFiles);
+  if (!viewFiles.includes('login.ejs') || !viewFiles.includes('error.ejs')) {
+    console.error('❌ Faltan vistas esenciales (login.ejs o error.ejs)');
+  }
+} catch (err) {
+  console.error('❌ Error accediendo al directorio views:', err);
+  process.exit(1);
+}
+
+// =============================================
 // CONEXIÓN A MONGODB (MEJORADA)
 // =============================================
-mongoose.connect(process.env.MONGODB_URI , {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
-
+  useUnifiedTopology: true, // Añadido para evitar warning
   retryWrites: true,
   w: 'majority'
 })
 .then(() => console.log('✅ Conectado a MongoDB'))
 .catch(err => {
   console.error('❌ Error en MongoDB:', err);
-  process.exit(1); // Salir si no hay conexión a DB
+  process.exit(1);
 });
 
 // =============================================
-// CONFIGURACIÓN DE MIDDLEWARES (ACTUALIZADA)
+// CONFIGURACIÓN DE VISTAS (MODIFICADO)
 // =============================================
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'dist', 'views'));
+app.set('views', viewsPath); // Usamos la variable ya definida
 
-// Configuración mejorada de body-parser (CRUCIAL PARA FORMULARIOS/API)
+// Configuración mejorada de body-parser
 app.use(express.json({
-  limit: '10mb',       // Límite para datos JSON
-  strict: true         // Solo acepta objetos y arrays
+  limit: '10mb',
+  strict: true
 }));
 
 app.use(express.urlencoded({
-  extended: true,      // Permite objetos anidados
-  limit: '10mb',       // Límite para datos de formularios
-  parameterLimit: 1000 // Máximo número de parámetros
+  extended: true,
+  limit: '10mb',
+  parameterLimit: 1000
 }));
 
 // Configuración de sesión (mejorada para seguridad)
@@ -47,16 +63,21 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 1 día
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 
 // Archivos estáticos con cache control (optimización)
 app.use(express.static(path.join(__dirname, 'public'), {
-  maxAge: '1d', // Cache por 1 día
-  etag: true
+  maxAge: '1d',
+  etag: true,
+  setHeaders: (res, path) => {
+    if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    }
+  }
 }));
 
 // =============================================
@@ -75,29 +96,31 @@ app.use('/', authRoutes);
 app.use('/products', productRoutes);
 
 // =============================================
-// MANEJO DE ERRORES (NUEVO)
+// MANEJO DE ERRORES (MEJORADO)
 // =============================================
-// Middleware para 404
 app.use((req, res, next) => {
   res.status(404).render('error', {
-    message: 'Página no encontrada'
+    message: 'Página no encontrada',
+    layout: false // Añadido por si usas layouts
   });
 });
 
-// Middleware para errores generales
 app.use((err, req, res, next) => {
   console.error('🔥 Error:', err.stack);
   res.status(500).render('error', {
     message: 'Error interno del servidor',
-    error: process.env.NODE_ENV === 'development' ? err.message : null
+    error: process.env.NODE_ENV === 'development' ? err.message : null,
+    layout: false
   });
 });
 
 // =============================================
-// INICIAR SERVIDOR (CON VALIDACIÓN)
+// INICIAR SERVIDOR (CON MÁS INFORMACIÓN)
 // =============================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`\n🚀 Servidor corriendo en http://localhost:${PORT}`);
   console.log(`🔧 Entorno: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`📂 Directorio de vistas: ${viewsPath}`);
+  console.log('🔄 Reinicia el servidor después de cambios en las vistas\n');
 });
