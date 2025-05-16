@@ -48,14 +48,14 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'secreto-temporal',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({  // ← Usa MongoDB para almacenar sesiones
-    mongoUrl: process.env.MONGODB_URI,
-    ttl: 24 * 60 * 60 // 1 día
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI, // Asegúrate que esta variable esté definida
+    ttl: 24 * 60 * 60 // 1 día en segundos
   }),
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // HTTPS en producción
+    secure: process.env.NODE_ENV === 'production', // Requerido para HTTPS
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 1 día
+    maxAge: 24 * 60 * 60 * 1000 // 1 día en milisegundos
   }
 }));
 
