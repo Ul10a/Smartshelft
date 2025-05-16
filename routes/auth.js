@@ -7,7 +7,7 @@ const authController = require('../controllers/authcontroller');
 router.get('/register', authController.showRegister);
 router.post('/register', authController.register);
 router.get('/login', authController.showLogin);
-router.post('/login', authController.login);
+router.post('/login', authController.dashboard);
 router.post('/logout', authController.logout);
 router.get('/contact', (req, res) => { res.render('contact'); });
 router.get('/help', (req, res) => { res.render('help'); });
