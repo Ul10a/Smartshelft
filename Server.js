@@ -16,8 +16,8 @@ const viewsPath = path.join(__dirname, 'views');
 try {
   const viewFiles = fs.readdirSync(viewsPath);
   console.log('✅ Vistas encontradas:', viewFiles);
-  if (!viewFiles.includes('login.ejs') || !viewFiles.includes('error.ejs')) {
-    console.error('❌ Faltan vistas esenciales (login.ejs o error.ejs)');
+  if (!viewFiles.includes('login.ejs')) {
+    console.error('❌ Falta vista esencial (login.ejs)');
   }
 } catch (err) {
   console.error('❌ Error accediendo al directorio views:', err);
@@ -69,6 +69,12 @@ app.use(session({
   }
 }));
 
+// Middleware para pasar datos de sesión a todas las vistas
+app.use((req, res, next) => {
+  res.locals.user = req.session.user || null;
+  next();
+});
+
 // Archivos estáticos con cache control (optimización)
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '1d',
@@ -99,17 +105,16 @@ app.use('/products', productRoutes);
 // MANEJO DE ERRORES (MEJORADO)
 // =============================================
 app.use((req, res, next) => {
-  res.status(404).render('error', {
-    message: 'Página no encontrada',
-    layout: false // Añadido por si usas layouts
+  res.status(404).render('login', { 
+    error: 'Página no encontrada',
+    layout: false
   });
 });
 
 app.use((err, req, res, next) => {
   console.error('🔥 Error:', err.stack);
-  res.status(500).render('error', {
-    message: 'Error interno del servidor',
-    error: process.env.NODE_ENV === 'development' ? err.message : null,
+  res.status(500).render('login', {
+    error: 'Error interno del servidor: ' + err.message,
     layout: false
   });
 });
