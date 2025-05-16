@@ -42,22 +42,27 @@ app.use(express.urlencoded({
 }));
 
 // Configuración de sesión (mejorada para seguridad)
+
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'secreto-lcd',
+  secret: process.env.SESSION_SECRET, // Obligatorio: Usa tu variable de entorno
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/smartshelf',
-    ttl: 24 * 60 * 60 // 1 día en segundos
+    mongoUrl: process.env.MONGODB_URI, // Tu conexión de MongoDB Atlas
+    collectionName: 'sessions',
+    ttl: 14 * 24 * 60 * 60, // 14 días de duración
+    autoRemove: 'interval',
+    autoRemoveInterval: 1440 // Limpia cada 24 horas (minutos)
   }),
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 1 día
-    sameSite: 'lax'
-  }
+    secure: true, // Solo HTTPS (obligatorio en producción)
+    httpOnly: true, // Previene acceso via JS
+    sameSite: 'none', // Necesario si usas CORS
+    domain: process.env.COOKIE_DOMAIN || '.tuapp.render.com', // Dominio principal
+    maxAge: 14 * 24 * 60 * 60 * 1000 // 14 días (debe coincidir con ttl)
+  },
+  proxy: true // Necesario para HTTPS en Render.com
 }));
-
 // Archivos estáticos con cache control (optimización)
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '1d', // Cache por 1 día
