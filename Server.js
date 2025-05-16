@@ -45,20 +45,20 @@ app.use(express.urlencoded({
 
 // Configuración de sesión (mejorada para seguridad)
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'secreto-temporal',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI, // Asegúrate que esta variable esté definida
-    ttl: 24 * 60 * 60 // 1 día en segundos
+  store: MongoStore.create({ 
+    mongoUrl: process.env.MONGODB_URI,
+    ttl: 24 * 60 * 60 // 1 día
   }),
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Requerido para HTTPS
-    secure: true,  // Solo HTTPS
-    sameSite: 'none',  // Necesario si el frontend/backend están en distintos dominios
+    secure: true, // ¡Obligatorio en Render.com!
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 1 día en milisegundos
-  }
+    sameSite: 'none', // Necesario si usas HTTPS
+    maxAge: 24 * 60 * 60 * 1000
+  },
+  proxy: true // Importante para Render.com
 }));
 
 // Archivos estáticos con cache control (optimización)
