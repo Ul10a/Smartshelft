@@ -19,8 +19,10 @@ router.post('/forgot-password', authController.postForgotPassword); // Se modifi
 // Ruta protegida para el dashboard
 router.get('/dashboard', (req, res, next) => {
   if (!req.session.userId) {
-    return res.redirect('/login');  // ← Middleware de autenticación
+    console.log("No hay sesión - Redirigiendo a login");
+    return res.redirect('/login');
   }
   next();
 }, authController.dashboard);
+
 module.exports = router;
