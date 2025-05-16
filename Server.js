@@ -44,24 +44,21 @@ app.use(express.urlencoded({
 // Configuración de sesión (mejorada para seguridad)
 
 app.use(session({
-  secret: process.env.SESSION_SECRET, // Obligatorio: Usa tu variable de entorno
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI, // Tu conexión de MongoDB Atlas
+    mongoUrl: process.env.MONGODB_URI,
     collectionName: 'sessions',
-    ttl: 14 * 24 * 60 * 60, // 14 días de duración
-    autoRemove: 'interval',
-    autoRemoveInterval: 1440 // Limpia cada 24 horas (minutos)
+    ttl: 14 * 24 * 60 * 60 // 14 días
   }),
   cookie: {
-    secure: true, // Solo HTTPS (obligatorio en producción)
-    httpOnly: true, // Previene acceso via JS
-    sameSite: 'none', // Necesario si usas CORS
-    domain: process.env.COOKIE_DOMAIN || '.tuapp.render.com', // Dominio principal
-    maxAge: 14 * 24 * 60 * 60 * 1000 // 14 días (debe coincidir con ttl)
+    secure: true, // Solo HTTPS
+    httpOnly: true,
+    sameSite: 'none',
+    maxAge: 14 * 24 * 60 * 60 * 1000 // 14 días
   },
-  proxy: true // Necesario para HTTPS en Render.com
+  proxy: true // Necesario para HTTPS en Render
 }));
 // Archivos estáticos con cache control (optimización)
 app.use(express.static(path.join(__dirname, 'public'), {
