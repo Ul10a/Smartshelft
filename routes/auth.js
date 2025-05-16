@@ -18,6 +18,6 @@ router.get('/forgot-password', authController.getForgotPassword);
 router.post('/forgot-password', authController.postForgotPassword);
 
 // Ruta protegida para el dashboard
-router.get('/Dashboard', authController.Dashboard);
+router.get('/dashboard', authController.dashboard);
 
 module.exports = router;
