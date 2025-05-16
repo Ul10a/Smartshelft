@@ -6,6 +6,10 @@
 <body>
     <h1>Error</h1>
     <p><%= message %></p>
-    <pre><%= error.stack %></pre>
+    <% if (error && error.stack) { %>
+      <pre><%= error.stack %></pre>
+    <% } else { %>
+      <pre>No stack trace available</pre>
+    <% } %>
 </body>
 </html>
