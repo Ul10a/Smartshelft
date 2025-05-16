@@ -3,100 +3,119 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const dotenv = require('dotenv');
 const path = require('path');
+const fs = require('fs'); // Added for directory verification
 const app = express();
 
-// Configuración de entorno (seguridad recomendada)
+// Environment configuration
 dotenv.config({ path: '.env' });
 
 // =============================================
-// CONEXIÓN A MONGODB (MEJORADA)
+// MONGODB CONNECTION (IMPROVED)
 // =============================================
-mongoose.connect(process.env.MONGODB_URI , {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
-
+  useUnifiedTopology: true, // Added recommended option
   retryWrites: true,
   w: 'majority'
 })
-.then(() => console.log('✅ Conectado a MongoDB'))
+.then(() => console.log('✅ Connected to MongoDB'))
 .catch(err => {
-  console.error('❌ Error en MongoDB:', err);
-  process.exit(1); // Salir si no hay conexión a DB
+  console.error('❌ MongoDB connection error:', err);
+  process.exit(1);
 });
 
 // =============================================
-// CONFIGURACIÓN DE MIDDLEWARES (ACTUALIZADA)
+// MIDDLEWARE CONFIGURATION (UPDATED)
 // =============================================
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+// Verify views directory exists
+const viewsPath = path.join(__dirname, 'views');
+if (!fs.existsSync(viewsPath)) {
+  console.error('❌ Views directory does not exist:', viewsPath);
+  process.exit(1);
+}
 
-// Configuración mejorada de body-parser (CRUCIAL PARA FORMULARIOS/API)
+// View engine setup
+app.set('view engine', 'ejs');
+app.set('views', viewsPath);
+
+// Enhanced body-parser configuration
 app.use(express.json({
-  limit: '10mb',       // Límite para datos JSON
-  strict: true         // Solo acepta objetos y arrays
+  limit: '10mb',
+  strict: true
 }));
 
 app.use(express.urlencoded({
-  extended: true,      // Permite objetos anidados
-  limit: '10mb',       // Límite para datos de formularios
-  parameterLimit: 1000 // Máximo número de parámetros
+  extended: true,
+  limit: '10mb',
+  parameterLimit: 1000
 }));
 
-// Configuración de sesión (mejorada para seguridad)
+// Session configuration (security improved)
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'secreto-lcd',
+  secret: process.env.SESSION_SECRET || 'fallback-secret',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 1 día
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 
-// Archivos estáticos con cache control (optimización)
+// Static files with cache control
 app.use(express.static(path.join(__dirname, 'public'), {
-  maxAge: '1d', // Cache por 1 día
+  maxAge: '1d',
   etag: true
-}));
+});
 
 // =============================================
-// RUTAS PRINCIPALES
+// MAIN ROUTES
 // =============================================
 app.get('/', (req, res) => {
   res.redirect('/login');
 });
 
-// Importar rutas
+// Import routes
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 
-// Montar rutas con prefijos
+// Mount routes
 app.use('/', authRoutes);
 app.use('/products', productRoutes);
 
 // =============================================
-// MANEJO DE ERRORES (NUEVO)
+// ERROR HANDLING (IMPROVED)
 // =============================================
-// Middleware para 404
+// 404 Handler
 app.use((req, res, next) => {
   res.status(404).render('error', {
-    message: 'Página no encontrada'
+    title: '404 Not Found',
+    message: 'The page you requested could not be found',
+    error: null
   });
 });
 
-// Middleware para errores generales
+// Global error handler
 app.use((err, req, res, next) => {
-  console.error('🔥 Error:', err.stack);
-  res.status(500).render('error', {
-    message: 'Error interno del servidor',
-    error: process.env.NODE_ENV === 'development' ? err.message : null
+  console.error('🔥 Server Error:', err.stack);
+  
+  const statusCode = err.statusCode || 500;
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  res.status(statusCode).render('error', {
+    title: `${statusCode} Error`,
+    message: err.message || 'Something went wrong',
+    error: isDevelopment ? err : null,
+    stack: isDevelopment ? err.stack : null
   });
 });
+
 // =============================================
-// INICIAR SERVIDOR (CON VALIDACIÓN)
+// SERVER START (WITH VALIDATION)
 // =============================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`🔧 Entorno: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`📁 Views directory: ${viewsPath}`);
 });
