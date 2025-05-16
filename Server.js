@@ -46,10 +46,15 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'secreto-lcd',
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/smartshelf',
+    ttl: 24 * 60 * 60 // 1 día en segundos
+  }),
   cookie: {
     secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 1 día
+    maxAge: 24 * 60 * 60 * 1000, // 1 día
+    sameSite: 'lax'
   }
 }));
 
