@@ -24,7 +24,7 @@ exports.register = async (req, res) => {
   const user = await User.create({ username, email, password: hash });
   req.session.userId = user._id;
   req.session.username = user.username;
-  res.redirect('/Dashboard');
+  res.redirect('/dashboard');
 };
 
 // Mostrar formulario de login
@@ -52,7 +52,7 @@ exports.login = async (req, res) => {
 
   req.session.userId = user._id;
   req.session.username = user.username;
-  res.redirect('/Dashboard');
+  res.redirect('/dashboard');
 };
 
 // Cerrar sesión
@@ -146,10 +146,10 @@ exports.postResetPassword = async (req, res) => {
 };
 
 // Ruta protegida para el dashboard
-exports.Dashboard = (req, res) => {
+exports.dashboard = (req, res) => {
   if (!req.session.userId) {
     return res.redirect('/login');
   }
 
-  res.render('Dashboard', { username: req.session.username });
+  res.render('dashboard', { username: req.session.username });
 };
